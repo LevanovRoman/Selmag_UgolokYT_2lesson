@@ -1,0 +1,142 @@
+ cd .\manager-app\
+mvn spring-boot:run
+
+mvn clean package
+java -jar target/manager-app-... .jar
+
+./mvnw clean package
+
+модель MVC model-view-controller
+
+Многоуровневая архитектура:
+4 уровня: с нижнего:
+ - уровень представления(презентатор) thymeleaf, html
+ - уровень приложения - логика контроллеров
+ - уровень бизнес-логики  - сервисы
+ - логика персистентности - хранение данных
+
+Контроллер(обработка запроса) -- Сервис(логика) -- Репозиторий(хранение данных)
+
+1. Товар - entity.Product
+2. interface repository.ProductRepository
+2a. class repository.InMemoryProductRepository
+3. interface service.ProductService
+3a. class service.DefaultProductService
+4. class controller.ProductsController
+5. @Repository, @Service, @Controller
+6. внедрение зависимостей:
+@Controller
+@RequiredArgsConstructor
+public class ProductsController {
+    private final ProductService productService;
+
+@Service
+@RequiredArgsConstructor
+public class DefaultProductService implements ProductService{
+
+    private final ProductRepository productRepository;
+
+7. добавить список в репозиторий:
+@Repository
+public class InMemoryProductRepository implements ProductRepository{
+
+    private final List<Product> products = Collections.synchronizedList(new LinkedList<>());
+
+8. ProductsController:
+    @GetMapping( "list")
+    public String getProductsList(Model model){
+        model.addAttribute("products", this.productService.findAllProducts()); --> надо создать
+        return "catalogue/products/list";
+    }
+9. public interface ProductService {
+
+       List<Product> findAllProducts();  --> надо реализовать
+10.DefaultProductService:
+@Override
+    public List<Product> findAllProducts() {
+        return this.productRepository.findAll(); --> надо создать
+    }
+11. public interface ProductRepository {
+        List<Product> findAll();
+    }
+12. InMemoryProductRepository:
+@Override
+    public List<Product> findAll() {
+        return Collections.unmodifiableList(this.products); --> чтобы нельзя было изменять список продуктов
+    }
+13. чтобы что-то вывести - здесь же создаем конструктор и заполняем список:
+public InMemoryProductRepository(){
+        IntStream.range(1, 4)
+                .forEach(i -> this.products.add(new Product(i, "Товар №%d".formatted(i),
+                        "Описание №%d".formatted(i))));
+    }
+14.templates.catalogue.products.list.html
+15. создание товара:
+ProductsController:
+@GetMapping
+    public String getNewProductPage(){
+        return "catalogue/products/new_product";
+    }
+16. templates.catalogue.products.new-product.html
+17. ProductsController:
+    @PostMapping("create")
+    public String createProduct(){
+
+    }
+18. чтобы передать данные из формы в контроллер - можем получить их в виде объекта
+Создаем его  в  record -- payload.NewProductPayload:
+public record NewProductPayload (String title, String details){
+} --> названия как в форме
+19. ProductsController:
+        @PostMapping("create")
+        public String createProduct(NewProductPayload payload){
+            Product product = this.productService.createProduct(payload.title(), payload.details());  --> надо создать
+            return "redirect:list";
+        }
+20. создаем createProduct():
+public interface ProductService {
+    Product createProduct(String title, String details);  --> надо реализовать
+}
+21. DefaultProductService:
+    @Override
+    public Product createProduct(String title, String details) {
+        return this.productRepository.save(new Product(null, title, details));   --> надо создать
+    }
+22. ProductRepository:
+Product save(Product product);  --> надо реализовать
+23. InMemoryProductRepository:
+    @Override
+    public Product save(Product product) {
+        product.setId(this.products.stream()
+                .max(Comparator.comparingInt(Product::getId))
+                .map(Product::getId)
+                .orElse(0) + 1);  //находим максимальный id и добавляем 1
+        this.products.add(product);
+        return product;
+    }
+24. можно удалить генерацию списка товаров
+25. создаем страницу товара:
+    @GetMapping("{productId:\\d+}")
+    public String getProduct(@PathVariable("productId") int productId, Model model){
+        model.addAttribute("product", this.productService.findProduct(productId).orElseThrow());   --> надо создать
+        return "catalogue/products/product";
+    }
+26.ProductService:
+Optional<Product> findProduct(int productId);  --> надо реализовать
+27. DefaultProductService:
+    @Override
+    public Optional<Product> findProduct(int productId) {
+        return this.productRepository.findById(productId);   --> надо создать
+    }
+28. ProductRepository:
+Optional<Product> findById(Integer productId);  --> надо реализовать
+29. InMemoryProductRepository:
+    @Override
+    public Optional<Product> findById(Integer productId) {
+        return this.products.stream()
+                .filter(product -> Objects.equals(productId, product.getId()))
+                .findFirst();
+    }
+30. создать шаблон: product.html
+
+
