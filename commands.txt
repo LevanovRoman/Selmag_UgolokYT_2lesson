@@ -198,7 +198,37 @@ void deleteById(Integer id);  --> надо реализовать
         this.products.removeIf(product -> Objects.equals(id, product.getId()));
     }
 41. Добавляем на страницу товара кнопки изменения и удаления товара
-42. Обработка ошибок
+42. Обработка ошибок:
+несуществующий id: ProductController:
+@ExceptionHandler(NoSuchElementException.class)
+    public String handleNoSuchElementException(NoSuchElementException exception, Model model, HttpServletResponse response){
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        model.addAttribute("error", exception.getMessage());
+        return "errors/404";
+    }
+43. errors/404.html
+-----------------------------
+44. локализация для ошибок:
+в resources -> новый файл messages.properties
+45. механизм интернационализации: ProductController:
+private final MessageSource messageSource;
+------------------------------
+46.Валидация данных: на уровне контроллера
+NewProductPayload, UpdateProductPayload  и в ProductsController -> @Valid и BindingResult bindingResult .....
+new_product.html:
+<div data-th-if="${errors}">
+    <h2>Допущены ошибки</h2>
+    <ul>
+        <li data-th-each="error: ${errors}" data-th-text="${error}"></li>
+    </ul>
+</div> ...
+47. собственное сообщение об ошибке:
+NewProductPayload: , message = "{catalogue.products.create.errors.title_is_invalid}"
+перевод в messages.properties
+48.ProductController:
+edit.html
+UpdateProductPayload
+
 
 
 
