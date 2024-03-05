@@ -73,7 +73,7 @@ public InMemoryProductRepository(){
 14.templates.catalogue.products.list.html
 15. создание товара:
 ProductsController:
-@GetMapping
+    @GetMapping
     public String getNewProductPage(){
         return "catalogue/products/new_product";
     }
@@ -115,6 +115,7 @@ Product save(Product product);  --> надо реализовать
         return product;
     }
 24. можно удалить генерацию списка товаров
+------------------------------------------------------------------------------------------------
 25. создаем страницу товара:
     @GetMapping("{productId:\\d+}")
     public String getProduct(@PathVariable("productId") int productId, Model model){
@@ -138,5 +139,68 @@ Optional<Product> findById(Integer productId);  --> надо реализова�
                 .findFirst();
     }
 30. создать шаблон: product.html
+------------------------------------------------------------------------------------------------
+31. редактирование товара: метод получается почти как getProduct
+    @GetMapping("{productId:\\d+}")
+    public String getProductEditPage(@PathVariable("productId") int productId, Model model){
+        model.addAttribute("product", this.productService.findProduct(productId).orElseThrow());
+        return "catalogue/products/edit";
+    }
+Дублирование кода. Чтобы избежать:
+мы можем вынести получение товара в модели в методе с аннотацией @ModelAttribute("product"):
+product - название атрибута модели, сюда будет сохранено значение возвращаемое из этого метода
+но это используется только в двух методах. Поэтому контроллер можно разделить на два контроллера:
+один - будет работать со списком товаров и реализовывать логику добавления товара
+второй - будет работать с конкретным товаром
+создаем новый контроллер ProductController и переносим методы и убираем лишнее в коде
+------------------------------------------------------------------------------------------------
+32. метод сохранения после редактирования товара в ProductController:
+требуется получить изменения товара --> создаем record UpdateProductPayload()
+в ProductController:
+    @PostMapping("edit")
+    public String updateProduct(@ModelAttribute("product") Product product, UpdateProductPayload payload){
+        this.productService.updateProduct(product.getId(), payload.title(), payload.details());   --> надо создать
+    }
+33. ProductService:
+void updateProduct(Integer id, String title, String details);  --> надо реализовать
+34. DefaultProductService:
+    @Override
+    public void updateProduct(Integer id, String title, String details) {
+        this.productRepository.findById(id)
+                .ifPresentOrElse(product -> {
+                    product.setTitle(title);
+                    product.setDetails(details);
+                }, () -> {
+                    throw new NoSuchElementException();
+                });
+    }
+35. создаем edit.html
+-------------------------------------------------------------------------------------------
+36. Удаление товара:
+ProductController:
+    @PostMapping("delete")
+    public String deleteProduct(@ModelAttribute("product") Product product){
+        this.productService.deleteProduct(product.getId());   --> надо создать
+        return "redirect:/catalogue/products/list";
+    }
+37.ProductService:
+void deleteProduct(Integer id);  --> надо реализовать
+38. DefaultProductService:
+    @Override
+    public void deleteProduct(Integer id) {
+        this.productRepository.deleteById(id);   --> надо создать
+    }
+39. ProductRepository:
+void deleteById(Integer id);  --> надо реализовать
+40. InMemoryProductRepository:
+    @Override
+    public void deleteById(Integer id) {
+        this.products.removeIf(product -> Objects.equals(id, product.getId()));
+    }
+41. Добавляем на страницу товара кнопки изменения и удаления товара
+42. Обработка ошибок
+
+
+
 
 
