@@ -1,0 +1,22 @@
+1. создать модуль catalogue-service, заполнить pom
+2. перенести папки entity, repository, service
+3. manager.entity -> public record Product()
+4. catalogue.controller -> ProductsRestController :
+ получение списка товаров:
+    @GetMapping
+    public List<Product> findProducts(){
+        return this.productService.findAllProducts();
+    }
+
+ создание товара:
+копируем в controller.payload -> NewProductPayload , UpdateProductPayload
+public ResponseEntity<?> createProduct
+5. catalogue.controller -> ProductRestController :
+копируем messages.properties
+-----------------------------
+6. ag.selm.manager:
+создаем пакет client
+interface ProductsRestClient
+меняем private final ProductsRestClient productsRestClient; в ProductsController , ProductController
+7. делаем реализацию ProductsRestClient --> RestClientProductsRestClient
+8. регистрация компонента в контексте приложения
