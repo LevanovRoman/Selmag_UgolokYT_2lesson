@@ -1,0 +1,4 @@
+docker run --name catalogue-db -p 5444:5432 -e POSTGRES_DB=catalogue -e POSTGRES_USER=catalogue -e POSTGRES_PASSWORD=catalogue postgres:16
+
+http://localhost:8081/catalogue-api/products?filter=%tertgert
+
